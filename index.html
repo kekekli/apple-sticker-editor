@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片贴纸编辑器</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #5AC8FA;
+            --background-color: #F2F2F7;
+            --card-background: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --border-color: #C6C6C8;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .main-content {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            min-height: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--background-color);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .upload-text {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            margin-right: 12px;
+        }
+
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .sticker-item {
+            aspect-ratio: 1;
+            background: var(--background-color);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sticker-item:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 122, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .sticker-item:active {
+            transform: scale(0.95);
+        }
+
+        .custom-upload {
+            grid-column: span 4;
+        }
+
+        .custom-upload-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-upload-btn:hover {
+            background: #0056CC;
+            transform: translateY(-1px);
+        }
+
+        .custom-upload-btn:active {
+            transform: translateY(0);
+        }
+
+        .export-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .export-btn {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            background: var(--card-background);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .export-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .export-btn.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn:hover {
+            background: #32ADE6;
+            transform: translateY(-1px);
+        }
+
+        .download-btn:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            background: var(--background-color);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .canvas-placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .canvas-placeholder-text {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .canvas-placeholder-hint {
+            font-size: 14px;
+        }
+
+        #editCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: var(--card-background);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tool-btn:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                padding: 16px;
+            }
+
+            .sidebar {
+                position: static;
+                order: 2;
+            }
+
+            .sticker-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .sticker-item {
+                font-size: 20px;
+            }
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--text-primary);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: #FF3B30;
+        }
+
+        .toast.success {
+            background: #34C759;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <!-- 上传区域 -->
+            <div class="upload-section">
+                <h3 class="section-title">上传图片</h3>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">点击或拖拽上传</div>
+                    <div class="upload-hint">支持 JPG、PNG、WebP<br>最大 10MB</div>
+                </div>
+                <input type="file" id="imageUpload" class="hidden" accept=".jpg,.jpeg,.png,.webp">
+            </div>
+
+            <!-- 贴纸选择 -->
+            <div class="stickers-section">
+                <h3 class="section-title">贴纸</h3>
+                <div class="sticker-grid" id="stickerGrid">
+                    <!-- Emoji贴纸 -->
+                    <div class="sticker-item" data-sticker="😀">😀</div>
+                    <div class="sticker-item" data-sticker="😍">😍</div>
+                    <div class="sticker-item" data-sticker="🤔">🤔</div>
+                    <div class="sticker-item" data-sticker="😎">😎</div>
+                    <div class="sticker-item" data-sticker="🥰">🥰</div>
+                    <div class="sticker-item" data-sticker="😂">😂</div>
+                    <div class="sticker-item" data-sticker="🤩">🤩</div>
+                    <div class="sticker-item" data-sticker="😊">😊</div>
+                    <div class="sticker-item" data-sticker="❤️">❤️</div>
+                    <div class="sticker-item" data-sticker="💕">💕</div>
+                    <div class="sticker-item" data-sticker="🔥">🔥</div>
+                    <div class="sticker-item" data-sticker="✨">✨</div>
+                    <div class="sticker-item" data-sticker="🎉">🎉</div>
+                    <div class="sticker-item" data-sticker="💯">💯</div>
+                    <div class="sticker-item" data-sticker="👑">👑</div>
+                    <div class="sticker-item" data-sticker="🌟">🌟</div>
+                    <div class="sticker-item" data-sticker="🦄">🦄</div>
+                    <div class="sticker-item" data-sticker="🌈">🌈</div>
+                    <div class="sticker-item" data-sticker="🎈">🎈</div>
+                    <div class="sticker-item" data-sticker="🍕">🍕</div>
+                </div>
+
+                <!-- 自定义贴图上传 -->
+                <div class="custom-upload">
+                    <button class="custom-upload-btn" id="customStickerBtn">
+                        上传自定义贴图
+                    </button>
+                    <input type="file" id="customStickerUpload" class="hidden" accept=".jpg,.jpeg,.png,.webp">
+                </div>
+            </div>
+
+            <!-- 导出选项 -->
+            <div class="export-section">
+                <h3 class="section-title">导出</h3>
+                <div class="export-options">
+                    <button class="export-btn active" data-scale="1">1x</button>
+                    <button class="export-btn" data-scale="2">2x</button>
+                    <button class="export-btn" data-scale="4">4x</button>
+                </div>
+                <button class="download-btn" id="downloadBtn" disabled>
+                    下载图片
+                </button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="header">
+                <h1>图片贴纸编辑器</h1>
+                <p>上传图片，添加贴纸，创建独特作品</p>
+            </div>
+
+            <div class="canvas-container" id="canvasContainer">
+                <div class="canvas-placeholder" id="canvasPlaceholder">
+                    <div class="canvas-placeholder-icon">🎨</div>
+                    <div class="canvas-placeholder-text">开始创作</div>
+                    <div class="canvas-placeholder-hint">上传一张图片开始编辑</div>
+                </div>
+                <canvas id="editCanvas" class="hidden"></canvas>
+            </div>
+
+            <div class="toolbar">
+                <button class="tool-btn" id="undoBtn" title="撤销">↶</button>
+                <button class="tool-btn" id="redoBtn" title="重做">↷</button>
+                <button class="tool-btn" id="clearBtn" title="清除所有贴纸">🗑️</button>
+                <button class="tool-btn" id="resetBtn" title="重置">🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载JavaScript模块 -->
+    <script src="js/Utils.js"></script>
+    <script src="js/Sticker.js"></script>
+    <script src="js/ImageEditor.js"></script>
+    <script src="js/EventHandler.js"></script>
+    <script src="js/GestureHandler.js"></script>
+    <script src="js/ExportManager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
